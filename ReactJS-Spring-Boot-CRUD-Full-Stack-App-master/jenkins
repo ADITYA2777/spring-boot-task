@@ -1,0 +1,131 @@
+pipeline {
+    agent any
+    
+    environment {
+        DOCKER_HUB_CREDENTIALS = 'DockerHub'
+        DOCKER_HUB_USERNAME = credentials('DOCKER_HUB_USERNAME')
+        DOCKER_HUB_PASSWORD = credentials('DOCKER_HUB_PASSWORD')
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/ADITYA2777/spring-boot-task.git'
+            }
+        }
+        
+        stage('Build Docker Images') {
+            steps {
+                script {
+                    docker.build("adityajain0127/react-frontend:${env.BUILD_NUMBER}", './react-frontend')
+                    docker.build("adityajain0127/springboot-backend:${env.BUILD_NUMBER}", './springboot-backend')
+                }
+            }
+        }
+        
+        stage('Push Docker Images') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId:DOCKER_HUB_CREDENTIALS, usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        docker.withRegistry('https://index.docker.io/v1/', DOCKER_HUB_CREDENTIALS) {
+                            docker.image("adityajain0127/react-frontend:${env.BUILD_NUMBER}").push()
+                            docker.image("adityajain0127/springboot-backend:${env.BUILD_NUMBER}").push()
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy') {
+            steps {
+                script {
+                    sh 'docker-compose -f docker-compose.yml down'
+                    sh 'docker-compose -f docker-compose.yml up -d'
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// pipeline {
+//     agent any
+    
+//     environment {
+//         // DOCKER_HUB_CREDENTIALS = 'DockerHub'
+//         DOCKER_IMAGE_NAME = 'adityajain0127/react-frontend'
+//         DOCKER_IMAGE_NAMES = 'adityajain0127/springboot-backend'
+//         DOCKER_IMAGE_TAG = 'latest'
+//     }
+    
+//     stages {
+//         stage('Code Checkout') {
+//             steps {
+//                 git url: 'https://github.com/ADITYA2777/spring-boot-task.git', branch: 'main' 
+//             }
+//         }
+        
+//         stage("Build and Test") {
+//             steps {
+//                 script {
+//                     // Build frontend Docker image
+//                     dir('react-frontend') {
+//                         sh "docker build -t ${DOCKER_IMAGE_NAME}-frontend:${DOCKER_IMAGE_TAG} ."
+//                     }
+                    
+//                     // Build backend Docker image
+//                     dir('springboot-backend') {
+//                         sh "docker build -t ${DOCKER_IMAGE_NAMES}-backend:${DOCKER_IMAGE_TAG} ."
+//                     }
+                    
+//                     echo 'Code build successful'
+//                 }
+//             }
+//         }
+        
+//         stage("Scan Image") {
+//             steps {
+//                 echo 'Image scanning complete'
+//                 // Add image scanning step if required
+//             }
+//         }
+        
+//         stage("Push to DockerHub") {
+//             steps {
+//                 script {
+//                     // Push frontend Docker image
+//                     sh "docker login -u ${DOCKER_HUB_USERNAME} -p ${DOCKER_HUB_PASSWORD}"
+//                     sh "docker push ${DOCKER_IMAGE_NAME}-frontend:${DOCKER_IMAGE_TAG}"
+                    
+//                     // Push backend Docker image
+//                     sh "docker push ${DOCKER_IMAGE_NAMES}-backend:${DOCKER_IMAGE_TAG}"
+                    
+//                     echo 'Image push successful'
+//                 }
+//             }
+//         }
+        
+//         stage('Application Deployment') {
+//             steps {
+//                 script {
+//                     sh "docker-compose down"
+//                     sh "docker-compose up -d"
+//                     echo 'Deployment successful'
+//                 }
+//             }
+//         }
+//     }
+// }

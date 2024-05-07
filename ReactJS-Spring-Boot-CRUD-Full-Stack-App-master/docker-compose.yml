@@ -1,0 +1,33 @@
+version: '3.3'
+
+services:
+  frontend:
+    build:
+      context: ./react-frontend
+      # dockerfile: Dockerfile.dockerfile
+    ports:
+      - "5000:3000"
+
+  backend:
+    build:
+      context: ./springboot-backend
+      # dockerfile: Dockerfile.dockerfile
+    ports:
+      - "9090:8080"
+    depends_on:
+      - mysql
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/db_example
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: example
+
+  mysql:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: aditya
+      MYSQL_DATABASE: db_adityajain
+      MYSQL_USER: root
+      MYSQL_PASSWORD: aditya
+    ports:
+      - "3306:3306"

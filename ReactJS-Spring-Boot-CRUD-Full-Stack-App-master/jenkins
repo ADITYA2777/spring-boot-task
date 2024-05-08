@@ -6,6 +6,7 @@ pipeline {
         NODE_IMAGE_NAME = 'adityajain0127/react-frontend'
         BACKEND_IMAGE_NAME = 'adityajain0127/springboot-backend'
         DOCKER_IMAGE_TAG = 'latest'
+        DOCKER_COMPOSE_FILE_PATH = './ReactJS-Spring-Boot-CRUD-Full-Stack-App-master/docker-compose.yml'
     }
     
     stages {
@@ -18,7 +19,10 @@ pipeline {
         stage("Build and Test frontend") {
             steps {
                 script {
-                    sh "docker build -t ${NODE_IMAGE_NAME}:${DOCKER_IMAGE_TAG} ."
+                    // Navigate to the frontend directory and build the Docker image
+                    dir("./ReactJS-Spring-Boot-CRUD-Full-Stack-App-master/react-frontend") {
+                        sh "docker build -t ${NODE_IMAGE_NAME}:${DOCKER_IMAGE_TAG} ."
+                    }
                     echo 'Frontend build successful'
                 }
             }
@@ -27,7 +31,10 @@ pipeline {
         stage("Build and Test backend") {
             steps {
                 script {
-                    sh "docker build -t ${BACKEND_IMAGE_NAME}:${DOCKER_IMAGE_TAG} ."
+                    // Navigate to the backend directory and build the Docker image
+                    dir("./ReactJS-Spring-Boot-CRUD-Full-Stack-App-master/springboot-backend") {
+                        sh "docker build -t ${BACKEND_IMAGE_NAME}:${DOCKER_IMAGE_TAG} ."
+                    }
                     echo 'Backend build successful'
                 }
             }
@@ -36,6 +43,7 @@ pipeline {
         stage("Push to DockerHub") {
             steps {
                 script {
+                    // Login to DockerHub and push the built images
                     withCredentials([usernamePassword(credentialsId: DOCKER_HUB_CREDENTIALS, passwordVariable: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_HUB_USERNAME')]) {
                         sh "docker login -u ${DOCKER_HUB_USERNAME} -p ${DOCKER_HUB_PASSWORD}"
                         sh "docker push ${NODE_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
@@ -49,8 +57,9 @@ pipeline {
         stage('Application Deployment') {
             steps {
                 script {
-                    sh "docker-compose down"
-                    sh "docker-compose up -d"
+                    // Deploy the application using Docker Compose
+                    sh "docker-compose -f ${DOCKER_COMPOSE_FILE_PATH} down"
+                    sh "docker-compose -f ${DOCKER_COMPOSE_FILE_PATH} up -d"
                     echo 'Deployment successful'
                 }
             }

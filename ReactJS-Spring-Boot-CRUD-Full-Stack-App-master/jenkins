@@ -3,129 +3,57 @@ pipeline {
     
     environment {
         DOCKER_HUB_CREDENTIALS = 'DockerHub'
-        DOCKER_HUB_USERNAME = credentials('DOCKER_HUB_USERNAME')
-        DOCKER_HUB_PASSWORD = credentials('DOCKER_HUB_PASSWORD')
+        NODE_IMAGE_NAME = 'adityajain0127/react-frontend'
+        BACKEND_IMAGE_NAME = 'adityajain0127/springboot-backend'
+        DOCKER_IMAGE_TAG = 'latest'
     }
     
     stages {
-        stage('Checkout') {
+        stage('Code Checkout') {
             steps {
-                git 'https://github.com/ADITYA2777/spring-boot-task.git'
+                git url: 'https://github.com/ADITYA2777/spring-boot-task.git', branch: 'main' 
             }
         }
         
-        stage('Build Docker Images') {
+        stage("Build and Test frontend") {
             steps {
                 script {
-                    docker.build("adityajain0127/react-frontend:${env.BUILD_NUMBER}", './react-frontend')
-                    docker.build("adityajain0127/springboot-backend:${env.BUILD_NUMBER}", './springboot-backend')
+                    sh "docker build -t ${NODE_IMAGE_NAME}:${DOCKER_IMAGE_TAG} ."
+                    echo 'Frontend build successful'
                 }
             }
         }
         
-        stage('Push Docker Images') {
+        stage("Build and Test backend") {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId:DOCKER_HUB_CREDENTIALS, usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                        docker.withRegistry('https://index.docker.io/v1/', DOCKER_HUB_CREDENTIALS) {
-                            docker.image("adityajain0127/react-frontend:${env.BUILD_NUMBER}").push()
-                            docker.image("adityajain0127/springboot-backend:${env.BUILD_NUMBER}").push()
-                        }
+                    sh "docker build -t ${BACKEND_IMAGE_NAME}:${DOCKER_IMAGE_TAG} ."
+                    echo 'Backend build successful'
+                }
+            }
+        }
+        
+        stage("Push to DockerHub") {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: DOCKER_HUB_CREDENTIALS, passwordVariable: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_HUB_USERNAME')]) {
+                        sh "docker login -u ${DOCKER_HUB_USERNAME} -p ${DOCKER_HUB_PASSWORD}"
+                        sh "docker push ${NODE_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
+                        sh "docker push ${BACKEND_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
+                        echo 'Image push successful'
                     }
                 }
             }
         }
         
-        stage('Deploy') {
+        stage('Application Deployment') {
             steps {
                 script {
-                    sh 'docker-compose -f docker-compose.yml down'
-                    sh 'docker-compose -f docker-compose.yml up -d'
+                    sh "docker-compose down"
+                    sh "docker-compose up -d"
+                    echo 'Deployment successful'
                 }
             }
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// pipeline {
-//     agent any
-    
-//     environment {
-//         // DOCKER_HUB_CREDENTIALS = 'DockerHub'
-//         DOCKER_IMAGE_NAME = 'adityajain0127/react-frontend'
-//         DOCKER_IMAGE_NAMES = 'adityajain0127/springboot-backend'
-//         DOCKER_IMAGE_TAG = 'latest'
-//     }
-    
-//     stages {
-//         stage('Code Checkout') {
-//             steps {
-//                 git url: 'https://github.com/ADITYA2777/spring-boot-task.git', branch: 'main' 
-//             }
-//         }
-        
-//         stage("Build and Test") {
-//             steps {
-//                 script {
-//                     // Build frontend Docker image
-//                     dir('react-frontend') {
-//                         sh "docker build -t ${DOCKER_IMAGE_NAME}-frontend:${DOCKER_IMAGE_TAG} ."
-//                     }
-                    
-//                     // Build backend Docker image
-//                     dir('springboot-backend') {
-//                         sh "docker build -t ${DOCKER_IMAGE_NAMES}-backend:${DOCKER_IMAGE_TAG} ."
-//                     }
-                    
-//                     echo 'Code build successful'
-//                 }
-//             }
-//         }
-        
-//         stage("Scan Image") {
-//             steps {
-//                 echo 'Image scanning complete'
-//                 // Add image scanning step if required
-//             }
-//         }
-        
-//         stage("Push to DockerHub") {
-//             steps {
-//                 script {
-//                     // Push frontend Docker image
-//                     sh "docker login -u ${DOCKER_HUB_USERNAME} -p ${DOCKER_HUB_PASSWORD}"
-//                     sh "docker push ${DOCKER_IMAGE_NAME}-frontend:${DOCKER_IMAGE_TAG}"
-                    
-//                     // Push backend Docker image
-//                     sh "docker push ${DOCKER_IMAGE_NAMES}-backend:${DOCKER_IMAGE_TAG}"
-                    
-//                     echo 'Image push successful'
-//                 }
-//             }
-//         }
-        
-//         stage('Application Deployment') {
-//             steps {
-//                 script {
-//                     sh "docker-compose down"
-//                     sh "docker-compose up -d"
-//                     echo 'Deployment successful'
-//                 }
-//             }
-//         }
-//     }
-// }

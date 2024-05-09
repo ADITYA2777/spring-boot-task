@@ -6,14 +6,14 @@ services:
       context: ./react-frontend
       # dockerfile: Dockerfile.dockerfile
     ports:
-      - "5000:3000"
+      - "6000:3000"
 
   backend:
     build:
       context: ./springboot-backend
       # dockerfile: Dockerfile.dockerfile
     ports:
-      - "9090:8080"
+      - "9000:8080"
     depends_on:
       - mysql
     environment:
